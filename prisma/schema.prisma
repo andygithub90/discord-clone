@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Profile {
+  id       String @id @default(uuid())
+  userId   String @unique
+  name     String
+  // 如果你在 Prisma 模型中定义了一个字段为 String 类型，但没有指定长度限制，那么在 MySQL 中，这个字段可能被映射为 VARCHAR(255)，这是一个常见的默认长度
+  // @db.Text 表示在数据库中将使用 TEXT 类型来存储这个字段的内容，适合存储较长的文本数据
+  // 当你使用 @db.Text 修饰符时，Prisma 会将字段映射为 MySQL 中的 TEXT 类型，TEXT: 最大 65,535 字节
+  imageUrl String @db.Text
+  email    String @db.Text
+
+  servers  Server[]
+  members  Member[]
+  channels Channel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Server {
+  id         String @id @default(uuid())
+  name       String
+  imageUrl   String @db.Text
+  inviteCode String @unique
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  members  Member[]
+  channels Channel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // https://www.prisma.io/docs/concepts/components/prisma-schema/relations/relation-mode#indexes
+  // With `relationMode = "prisma"`, no foreign keys are used, so relation fields will not benefit from the index usually created by the relational database under the hood.
+  // prisma 建議對 foreign keys 創建索引
+  // 通过在这个字段上创建一个索引，可以加速根据用户的 "Profile" ID 进行查询
+  // 查找特定用户的服务器： 如果你需要查找特定用户创建的所有服务器，通过在 profileId 上创建索引可以加速这些查询。
+  // 加速关联查询： 当你通过关联字段进行查询时，例如获取用户创建的所有服务器，索引可以加速这些关联查询，而不需要完全扫描表格。
+  // 避免全表扫描： 在没有索引的情况下，数据库可能需要对整个表进行扫描来找到匹配特定条件的行。索引可以减少扫描的数据量，从而提高查询性能。
+  @@index([profileId])
+}
+
+enum MemberRole {
+  ADMIN
+  MODERATOR
+  GUEST
+}
+
+model Member {
+  id   String     @id @default(uuid())
+  role MemberRole @default(GUEST)
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+  directMessages DirectMessage[]
+
+  conversationInitiated Conversation[] @relation("MemberOne")
+  conversationReceived Conversation[] @relation("MemberTwo")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // @@index([profileId, serverId]) 将创建一个复合索引
+  // 将索引分别写在两行 @@index([profileId]) 和 @@index([serverId]) 是一个更好的做法，因为在 relationMode = "prisma" 下，Prisma 不使用外键，并且可能会更好地优化单独的索引。
+  @@index([profileId])
+  @@index([serverId])
+}
+
+enum ChannelType {
+  TEXT
+  AUDIO
+  VIDEO
+}
+
+model Channel {
+  id   String      @id @default(uuid())
+  name String
+  type ChannelType @default(TEXT)
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@index([serverId])
+}
+
+// model Message 是用於 channel 的訊息，用於私訊的訊息請參考 model DirectMessage
+model Message{
+  id String @id @default(uuid())
+  content String @db.Text
+
+  fileUrl String? @db.Text
+
+  memberId String
+  member Member @relation(fields: [memberId],references: [id],onDelete: Cascade)
+
+  channelId String
+  channel Channel @relation(fields: [channelId],references: [id],onDelete: Cascade)
+
+  deleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([memberId])
+}
+
+model Conversation{
+  id String @id @default(uuid())
+
+  memberOneId String
+  memberOne Member @relation("MemberOne",fields: [memberOneId],references:[id],onDelete: Cascade)
+
+  memberTwoId String
+  memberTwo Member @relation("MemberTwo",fields: [memberTwoId],references: [id],onDelete: Cascade)
+
+  directMessages DirectMessage[]
+
+  @@index([memberTwoId])
+
+  @@unique([memberOneId,memberTwoId])
+}
+
+// model DirectMessage 是用於私訊的訊息，用於 channel 的訊息請參考 model Message
+model DirectMessage{
+  id String @id @default(uuid())
+  content String @db.Text
+  fileUrl String? @db.Text
+
+  memberId String
+  member Member @relation(fields: [memberId],references: [id],onDelete: Cascade)
+
+  conversationId String
+  conversation Conversation @relation(fields: [conversationId],references: [id],onDelete: Cascade)
+
+  deleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+  @@index([conversationId])
+}
