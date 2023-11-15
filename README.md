@@ -342,3 +342,8 @@ export async function GET(req: NextRequest) {
 4. create media room at `components/media-room.tsx`, see `components/media-room.tsx` file
 5. 在 `app/(main)/(routes)/servers/[serverId]/channels/[channelId]/page.tsx` 引入 `<MediaRoom />`
 6. 在前台點擊 CHANNELS 旁邊的 "+" 號， Channel Type 選擇 Audio 或 Video ，進入該 channel 可以測試音訊通話和視訊通話
+
+# Deployment
+我們不能部署到 vercel 因為 vercel 是 serverless 的，因為我們有用 websocket 所以我們不能用 serverless 的服務，所以我們改部署到 https://railway.app/
+1. 到 https://railway.app/ 用創建一個帳戶
+2. 登入後點擊 New Project -> 點擊 Deploy from GitHub repo -> 點擊 Configure GitHub App -> 選擇 All repositories -> 點擊 Install & Authorize -> 重整頁面再點擊 Deploy from GitHub repo 就會看到 github 帳戶底下的專案 -> 點擊你要部署的專案 -> 點擊 Add variables -> 點擊 Raw Editor -> 找到專案的 .env 文件並複製裡面的所有內容 -> 點擊 Update Variables
