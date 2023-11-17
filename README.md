@@ -351,11 +351,16 @@ export async function GET(req: NextRequest) {
 1. 到 https://railway.app/ 用創建一個帳戶
 2. 登入後點擊 New Project -> 點擊 Deploy from GitHub repo -> 點擊 Configure GitHub App -> 選擇 All repositories -> 點擊 Install & Authorize -> 重整頁面再點擊 Deploy from GitHub repo 就會看到 github 帳戶底下的專案 -> 點擊你要部署的專案 -> 點擊 Add variables -> 點擊 Raw Editor -> 找到專案的 .env 文件並複製裡面的所有內容 -> 點擊 Update Variables
 
-**railway 需要綁信用卡買最低階的 plan 才能用 push commit 到 github 去 trigger deploy**
+**railway 需要綁信用卡買最低階的 plan 才能部署，買最低階的 plan 後用 push commit 到 github 去 trigger deploy ，或是更新 Variables 也可以 trigger deploy**
+
+3. 部署完成後點擊 Deployments tab -> 點擊成功部署的 deployment -> 點擊 Add a Domain 會得到一個 Domain ->
+   點擊 Variables tab -> 點擊 RAW Editor 新增 NEXT_PUBLIC_SITE_URL 變數，像是：`NEXT_PUBLIC_SITE_URL=https://di******90.up.railway.app` -> 點擊 Update Variables 更新變數並 trigger deploy
 
 ## Troubleshooting
+
 ### Property 'className' does not exist
+
 `npm run build` 的時候出現  
 42.74 ./components/ui/dialog.tsx:14:3  
 42.74 Type error: Property 'className' does not exist on type 'DialogPortalProps'.  
-用 `npx shadcn-ui@latest add dialog` 和 `npx shadcn-ui@latest add sheet` 指令重新 install shadcn的 dialog 和 sheet 後可以正常 build
+用 `npx shadcn-ui@latest add dialog` 和 `npx shadcn-ui@latest add sheet` 指令重新 install shadcn 的 dialog 和 sheet 後可以正常 build
